@@ -1,0 +1,72 @@
+@{
+    ViewData["Title"] = "Yeni Video Ekle";
+}
+
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-plus-circle me-2"></i>Yeni Video Ekle</h2>
+        <a href="/Admin/Videos" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Geri</a>
+    </div>
+
+    @if (TempData["Error"] is string errorMsg)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @errorMsg
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <form method="post" action="/Admin/CreateVideo">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Baslik</label>
+                        <input type="text" name="title" class="form-control" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Video URL</label>
+                        <input type="url" name="url" class="form-control" required />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Aciklama</label>
+                        <textarea name="description" class="form-control" rows="3" required></textarea>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Sure (saniye)</label>
+                        <input type="number" name="durationSec" class="form-control" min="1" required />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Minimum Yas Grubu</label>
+                        <select name="minAgeGroup" class="form-select" required>
+                            <option value="Child">Cocuk (4-12)</option>
+                            <option value="Adult" selected>Yetiskin (13-65)</option>
+                            <option value="Senior">Yasli (65+)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Abonelik Filtresi</label>
+                        <select name="subscriptionFilter" class="form-select">
+                            <option value="">Tumu</option>
+                            <option value="Bireysel">Bireysel</option>
+                            <option value="Merkezi">Merkezi</option>
+                            <option value="Endustriyel">Endustriyel</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Etiketler</label>
+                        <input type="text" name="tags" class="form-control" placeholder="ornek: guvenlik, kaçak, uyari" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Thumbnail URL</label>
+                        <input type="url" name="thumbnailUrl" class="form-control" required />
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Kaydet</button>
+                    <a href="/Admin/Videos" class="btn btn-outline-secondary ms-2">Iptal</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

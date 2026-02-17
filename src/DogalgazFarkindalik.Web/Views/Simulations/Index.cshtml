@@ -1,0 +1,36 @@
+@{
+    ViewData["Title"] = "Simülasyonlar";
+}
+
+<div class="container py-5">
+    <div class="text-center mb-4">
+        <h2><i class="bi bi-controller me-2"></i>Simülasyonlar</h2>
+        <p class="text-muted">Gerçekçi senaryolarla doğalgaz güvenliği bilginizi test edin</p>
+    </div>
+
+    <div class="row g-4">
+        @if (ViewBag.Simulations is System.Text.Json.JsonElement simulations)
+        {
+            foreach (var sim in simulations.EnumerateArray())
+            {
+                <div class="col-md-6">
+                    <div class="card card-hover h-100 border-0 shadow-sm">
+                        <div class="card-body p-4">
+                            <div class="bg-warning bg-opacity-10 rounded p-3 mb-3 text-center">
+                                <i class="bi bi-controller text-warning" style="font-size: 3rem;"></i>
+                            </div>
+                            <h5 class="card-title">@sim.GetProperty("title").GetString()</h5>
+                            <p class="card-text text-muted">@sim.GetProperty("description").GetString()</p>
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <span class="badge bg-warning text-dark">@sim.GetProperty("minAgeGroup").GetString()</span>
+                                <a href="/Simulations/Detail/@sim.GetProperty("id").GetString()" class="btn btn-outline-warning">
+                                    <i class="bi bi-play-fill me-1"></i>Başla
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>

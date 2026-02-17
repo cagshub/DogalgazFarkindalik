@@ -1,0 +1,61 @@
+services:
+  # PostgreSQL Veritabani
+  dogalgaz-db:
+    image: postgres:16
+    container_name: dogalgaz-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      POSTGRES_DB: dogalgaz_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # REST API
+  dogalgaz-api:
+    build:
+      context: .
+      dockerfile: src/DogalgazFarkindalik.API/Dockerfile
+    container_name: dogalgaz-api
+    ports:
+      - "5000:5000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__Default=Host=dogalgaz-db;Port=5432;Database=dogalgaz_db;Username=postgres;Password=postgres123
+      - Jwt__Secret=BuCokGizliBirAnahtarOlmaliEnAz32Karakter!!
+      - Jwt__Issuer=DogalgazFarkindalik
+      - Jwt__Audience=DogalgazFarkindalik
+      - Jwt__ExpiryMinutes=15
+      - Email__SmtpHost=smtp.gmail.com
+      - Email__SmtpPort=587
+      - Email__SenderEmail=caglarklc00@gmail.com
+      - Email__SenderPassword=ihei sezx ngfm tjok
+      - Email__SenderName=Dogalgaz Farkindalik Platformu
+      - Email__VerificationTokenExpiryHours=24
+      - App__BaseUrl=http://localhost:5001
+    depends_on:
+      dogalgaz-db:
+        condition: service_healthy
+
+  # Web UI (MVC)
+  dogalgaz-web:
+    build:
+      context: .
+      dockerfile: src/DogalgazFarkindalik.Web/Dockerfile
+    container_name: dogalgaz-web
+    ports:
+      - "5001:5001"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ApiBaseUrl=http://dogalgaz-api:5000
+    depends_on:
+      - dogalgaz-api
+
+volumes:
+  pgdata:

@@ -1,0 +1,204 @@
+@{
+    ViewData["Title"] = "Yeni Anket Olustur";
+}
+
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-plus-circle me-2"></i>Yeni Anket Olustur</h2>
+        <a href="/Admin/Surveys" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Geri</a>
+    </div>
+
+    @if (TempData["Error"] is string errorMsg)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @errorMsg
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <form id="surveyForm">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-5">
+                        <label class="form-label">Baslik</label>
+                        <input type="text" id="surveyTitle" class="form-control" required />
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label">Aciklama</label>
+                        <input type="text" id="surveyDescription" class="form-control" required />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Aktif mi?</label>
+                        <div class="form-check form-switch mt-2">
+                            <input type="checkbox" class="form-check-input" id="surveyIsActive" checked />
+                            <label class="form-check-label" for="surveyIsActive">Aktif</label>
+                        </div>
+                    </div>
+                </div>
+
+                <hr />
+                <h5>Sorular</h5>
+                <div id="questionsContainer"></div>
+                <button type="button" class="btn btn-outline-success mt-2" onclick="addQuestion()">
+                    <i class="bi bi-plus-lg me-1"></i>Soru Ekle
+                </button>
+
+                <div class="mt-4">
+                    <button type="button" class="btn btn-primary" onclick="submitSurvey()">
+                        <i class="bi bi-check-lg me-1"></i>Kaydet
+                    </button>
+                    <a href="/Admin/Surveys" class="btn btn-outline-secondary ms-2">Iptal</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let questionIndex = 0;
+
+    function addQuestion() {
+        const container = document.getElementById('questionsContainer');
+        const qIdx = questionIndex++;
+        const div = document.createElement('div');
+        div.className = 'card border mb-3';
+        div.id = `question-${qIdx}`;
+        div.innerHTML = `
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Soru ${qIdx + 1}</strong>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeElement('question-${qIdx}')">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Soru Metni</label>
+                        <input type="text" class="form-control q-text" required />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Soru Tipi</label>
+                        <select class="form-select q-type">
+                            <option value="SingleChoice">Tek Secim</option>
+                            <option value="MultipleChoice">Coklu Secim</option>
+                            <option value="TrueFalse">Dogru/Yanlis</option>
+                            <option value="Scale">Olcek</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">Agirlik</label>
+                        <input type="number" class="form-control q-weight" value="1" min="1" />
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">Sira</label>
+                        <input type="number" class="form-control q-order" value="${qIdx + 1}" min="1" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Yas Filtresi</label>
+                        <select class="form-select q-ageFilter">
+                            <option value="">Tumu</option>
+                            <option value="Child">Cocuk</option>
+                            <option value="Adult">Yetiskin</option>
+                            <option value="Senior">Yasli</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Abn. Filtresi</label>
+                        <select class="form-select q-subFilter">
+                            <option value="">Tumu</option>
+                            <option value="Bireysel">Bireysel</option>
+                            <option value="Merkezi">Merkezi</option>
+                            <option value="Endustriyel">Endustriyel</option>
+                        </select>
+                    </div>
+                </div>
+                <h6>Secenekler</h6>
+                <div class="options-container"></div>
+                <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addOption(this)">
+                    <i class="bi bi-plus me-1"></i>Secenek Ekle
+                </button>
+            </div>`;
+        container.appendChild(div);
+        // Add 2 default options
+        const optBtn = div.querySelector('.options-container').parentElement.querySelector('button');
+        addOption(optBtn);
+        addOption(optBtn);
+    }
+
+    function addOption(btn) {
+        const container = btn.parentElement.querySelector('.options-container');
+        const div = document.createElement('div');
+        div.className = 'row g-2 mb-2 option-row';
+        div.innerHTML = `
+            <div class="col-md-5">
+                <input type="text" class="form-control opt-text" placeholder="Secenek metni" required />
+            </div>
+            <div class="col-md-3">
+                <input type="number" class="form-control opt-value" placeholder="Deger (puan)" value="0" />
+            </div>
+            <div class="col-md-2">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.option-row').remove()">
+                    <i class="bi bi-x"></i> Kaldir
+                </button>
+            </div>`;
+        container.appendChild(div);
+    }
+
+    function removeElement(id) {
+        document.getElementById(id).remove();
+    }
+
+    function submitSurvey() {
+        const data = {
+            title: document.getElementById('surveyTitle').value,
+            description: document.getElementById('surveyDescription').value,
+            isActive: document.getElementById('surveyIsActive').checked,
+            questions: []
+        };
+
+        document.querySelectorAll('#questionsContainer > .card').forEach(qCard => {
+            const question = {
+                text: qCard.querySelector('.q-text').value,
+                type: qCard.querySelector('.q-type').value,
+                weight: parseInt(qCard.querySelector('.q-weight').value) || 1,
+                order: parseInt(qCard.querySelector('.q-order').value) || 1,
+                ageGroupFilter: qCard.querySelector('.q-ageFilter').value || null,
+                subscriptionFilter: qCard.querySelector('.q-subFilter').value || null,
+                options: []
+            };
+            qCard.querySelectorAll('.option-row').forEach(optRow => {
+                question.options.push({
+                    text: optRow.querySelector('.opt-text').value,
+                    value: parseInt(optRow.querySelector('.opt-value').value) || 0
+                });
+            });
+            data.questions.push(question);
+        });
+
+        if (!data.title || !data.description) {
+            alert('Baslik ve aciklama zorunludur.');
+            return;
+        }
+        if (data.questions.length === 0) {
+            alert('En az bir soru eklemelisiniz.');
+            return;
+        }
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/Admin/CreateSurvey';
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'formData';
+        input.value = JSON.stringify(data);
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    // Add initial question
+    addQuestion();
+</script>
+}

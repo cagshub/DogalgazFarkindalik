@@ -1,0 +1,242 @@
+@model System.Text.Json.JsonElement
+@{
+    ViewData["Title"] = "Simulasyon Duzenle";
+    var id = Model.GetProperty("id").GetString();
+}
+
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-pencil me-2"></i>Simulasyon Duzenle</h2>
+        <a href="/Admin/Simulations" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Geri</a>
+    </div>
+
+    @if (TempData["Error"] is string errorMsg)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @errorMsg
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <form id="simForm">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label">Baslik</label>
+                        <input type="text" id="simTitle" class="form-control" value="@Model.GetProperty("title").GetString()" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Aciklama</label>
+                        <input type="text" id="simDescription" class="form-control" value="@Model.GetProperty("description").GetString()" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Minimum Yas Grubu</label>
+                        @{
+                            var ageGroup = Model.GetProperty("minAgeGroup").GetString();
+                        }
+                        <select id="simAgeGroup" class="form-select">
+                            @foreach (var ag in new[] { ("", "Secilmedi"), ("Child", "Cocuk (4-12)"), ("Adult", "Yetiskin (13-65)"), ("Senior", "Yasli (65+)") })
+                            {
+                                if (ag.Item1 == ageGroup)
+                                {
+                                    <option value="@ag.Item1" selected="selected">@ag.Item2</option>
+                                }
+                                else
+                                {
+                                    <option value="@ag.Item1">@ag.Item2</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Abonelik Filtresi</label>
+                        @{
+                            var subFilter = Model.TryGetProperty("subscriptionFilter", out var sfv) && sfv.ValueKind != System.Text.Json.JsonValueKind.Null ? sfv.GetString() : "";
+                        }
+                        <select id="simSubFilter" class="form-select">
+                            @foreach (var sf in new[] { ("", "Tumu"), ("Bireysel", "Bireysel"), ("Merkezi", "Merkezi"), ("Endustriyel", "Endustriyel") })
+                            {
+                                if (sf.Item1 == (subFilter ?? ""))
+                                {
+                                    <option value="@sf.Item1" selected="selected">@sf.Item2</option>
+                                }
+                                else
+                                {
+                                    <option value="@sf.Item1">@sf.Item2</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <hr />
+                <h5>Sorular</h5>
+                <div id="questionsContainer"></div>
+                <button type="button" class="btn btn-outline-success mt-2" onclick="addQuestion()">
+                    <i class="bi bi-plus-lg me-1"></i>Soru Ekle
+                </button>
+
+                <div class="mt-4">
+                    <button type="button" class="btn btn-primary" onclick="submitSimulation()">
+                        <i class="bi bi-check-lg me-1"></i>Guncelle
+                    </button>
+                    <a href="/Admin/Simulations" class="btn btn-outline-secondary ms-2">Iptal</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let questionIndex = 0;
+
+    function addQuestion(text, imageUrl, order, options) {
+        const container = document.getElementById('questionsContainer');
+        const qIdx = questionIndex++;
+        const div = document.createElement('div');
+        div.className = 'card border mb-3';
+        div.id = `question-${qIdx}`;
+        div.innerHTML = `
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Soru ${qIdx + 1}</strong>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeElement('question-${qIdx}')">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Soru Metni</label>
+                        <input type="text" class="form-control q-text" value="${escapeHtml(text || '')}" required />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Gorsel URL (opsiyonel)</label>
+                        <input type="text" class="form-control q-image" value="${escapeHtml(imageUrl || '')}" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Sira</label>
+                        <input type="number" class="form-control q-order" value="${order || qIdx + 1}" min="1" />
+                    </div>
+                </div>
+                <h6>Secenekler</h6>
+                <div class="options-container"></div>
+                <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addOption(this)">
+                    <i class="bi bi-plus me-1"></i>Secenek Ekle
+                </button>
+            </div>`;
+        container.appendChild(div);
+
+        if (options && options.length > 0) {
+            const optBtn = div.querySelector('.options-container').parentElement.querySelector('button');
+            options.forEach(opt => addOption(optBtn, opt.text, opt.isCorrect, opt.explanation));
+        }
+    }
+
+    function addOption(btn, text, isCorrect, explanation) {
+        const container = btn.parentElement.querySelector('.options-container');
+        const div = document.createElement('div');
+        div.className = 'row g-2 mb-2 option-row';
+        div.innerHTML = `
+            <div class="col-md-4">
+                <input type="text" class="form-control opt-text" placeholder="Secenek metni" value="${escapeHtml(text || '')}" required />
+            </div>
+            <div class="col-md-3">
+                <input type="text" class="form-control opt-explanation" placeholder="Aciklama (opsiyonel)" value="${escapeHtml(explanation || '')}" />
+            </div>
+            <div class="col-md-3">
+                <div class="form-check mt-2">
+                    <input type="checkbox" class="form-check-input opt-correct" ${isCorrect ? 'checked' : ''} />
+                    <label class="form-check-label">Dogru cevap</label>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.option-row').remove()">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>`;
+        container.appendChild(div);
+    }
+
+    function removeElement(id) {
+        document.getElementById(id).remove();
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function submitSimulation() {
+        const data = {
+            title: document.getElementById('simTitle').value,
+            description: document.getElementById('simDescription').value,
+            minAgeGroup: document.getElementById('simAgeGroup').value || null,
+            subscriptionFilter: document.getElementById('simSubFilter').value || null,
+            questions: []
+        };
+
+        document.querySelectorAll('#questionsContainer > .card').forEach(qCard => {
+            const question = {
+                text: qCard.querySelector('.q-text').value,
+                imageUrl: qCard.querySelector('.q-image').value || null,
+                order: parseInt(qCard.querySelector('.q-order').value) || 1,
+                options: []
+            };
+            qCard.querySelectorAll('.option-row').forEach(optRow => {
+                question.options.push({
+                    text: optRow.querySelector('.opt-text').value,
+                    isCorrect: optRow.querySelector('.opt-correct').checked,
+                    explanation: optRow.querySelector('.opt-explanation').value || null
+                });
+            });
+            data.questions.push(question);
+        });
+
+        if (!data.title || !data.description) {
+            alert('Baslik ve aciklama zorunludur.');
+            return;
+        }
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/Admin/EditSimulation?id=@id';
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'formData';
+        input.value = JSON.stringify(data);
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    // Load existing questions
+    @if (Model.TryGetProperty("questions", out var questions))
+    {
+        @foreach (var q in questions.EnumerateArray())
+        {
+            var qText = q.GetProperty("text").GetString()?.Replace("\\", "\\\\").Replace("'", "\\'").Replace("\n", "\\n");
+            var qImage = q.TryGetProperty("imageUrl", out var imgVal) && imgVal.ValueKind != System.Text.Json.JsonValueKind.Null ? imgVal.GetString()?.Replace("\\", "\\\\").Replace("'", "\\'") : "";
+            var qOrder = q.GetProperty("order").GetInt32();
+            <text>
+            addQuestion('@Html.Raw(qText)', '@Html.Raw(qImage)', @qOrder, [
+            </text>
+            @if (q.TryGetProperty("options", out var opts))
+            {
+                var first = true;
+                @foreach (var o in opts.EnumerateArray())
+                {
+                    var oText = o.GetProperty("text").GetString()?.Replace("\\", "\\\\").Replace("'", "\\'");
+                    if (!first) { <text>,</text> }
+                    <text>{ text: '@Html.Raw(oText)', isCorrect: false, explanation: '' }</text>
+                    first = false;
+                }
+            }
+            <text>]);
+            </text>
+        }
+    }
+</script>
+}

@@ -1,0 +1,80 @@
+@model List<System.Text.Json.JsonElement>
+@{
+    ViewData["Title"] = "Simulasyon Yonetimi";
+}
+
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-controller me-2"></i>Simulasyon Yonetimi</h2>
+        <div>
+            <a href="/Admin/Dashboard" class="btn btn-outline-secondary me-2"><i class="bi bi-arrow-left me-1"></i>Dashboard</a>
+            <a href="/Admin/CreateSimulation" class="btn btn-success"><i class="bi bi-plus-lg me-1"></i>Yeni Simulasyon</a>
+        </div>
+    </div>
+
+    @if (TempData["Success"] is string successMsg)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @successMsg
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] is string errorMsg)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @errorMsg
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Baslik</th>
+                        <th>Aciklama</th>
+                        <th>Yas Grubu</th>
+                        <th>Abonelik</th>
+                        <th class="text-end">Islemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Count == 0)
+                    {
+                        <tr><td colspan="5" class="text-center text-muted py-4">Henuz simulasyon eklenmemis.</td></tr>
+                    }
+                    @foreach (var sim in Model)
+                    {
+                        var id = sim.GetProperty("id").GetString();
+                        <tr>
+                            <td><strong>@sim.GetProperty("title").GetString()</strong></td>
+                            <td><small class="text-muted">@sim.GetProperty("description").GetString()</small></td>
+                            <td><span class="badge bg-primary">@sim.GetProperty("minAgeGroup").GetString()</span></td>
+                            <td>
+                                @if (sim.TryGetProperty("subscriptionFilter", out var sf) && sf.ValueKind != System.Text.Json.JsonValueKind.Null)
+                                {
+                                    <span class="badge bg-secondary">@sf.GetString()</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Tumu</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <a href="/Admin/EditSimulation?id=@id" class="btn btn-sm btn-outline-primary me-1">
+                                    <i class="bi bi-pencil"></i> Duzenle
+                                </a>
+                                <form method="post" action="/Admin/DeleteSimulation?id=@id" class="d-inline" onsubmit="return confirm('Bu simulasyonu silmek istediginizden emin misiniz?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i> Sil
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

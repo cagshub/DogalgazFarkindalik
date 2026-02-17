@@ -1,0 +1,40 @@
+@{
+    ViewData["Title"] = "Anketler";
+}
+
+<div class="container py-5">
+    <div class="text-center mb-4">
+        <h2><i class="bi bi-clipboard-check me-2"></i>Anketler</h2>
+        <p class="text-muted">Doğalgaz farkındalık anketlerini tamamlayın</p>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success text-center">
+            <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+        </div>
+    }
+
+    <div class="row g-4">
+        @if (ViewBag.Surveys is System.Text.Json.JsonElement surveys)
+        {
+            foreach (var survey in surveys.EnumerateArray())
+            {
+                <div class="col-md-6">
+                    <div class="card card-hover h-100 border-0 shadow-sm">
+                        <div class="card-body p-4">
+                            <div class="bg-success bg-opacity-10 rounded p-3 mb-3 text-center">
+                                <i class="bi bi-clipboard-check text-success" style="font-size: 3rem;"></i>
+                            </div>
+                            <h5 class="card-title">@survey.GetProperty("title").GetString()</h5>
+                            <p class="card-text text-muted">@survey.GetProperty("description").GetString()</p>
+                            <a href="/Surveys/Detail/@survey.GetProperty("id").GetString()" class="btn btn-outline-success w-100 mt-2">
+                                <i class="bi bi-pencil-square me-1"></i>Ankete Katıl
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>

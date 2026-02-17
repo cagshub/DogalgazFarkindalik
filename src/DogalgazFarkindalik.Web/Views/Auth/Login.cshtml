@@ -1,0 +1,63 @@
+@{
+    ViewData["Title"] = "Giris Yap";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-person-circle text-primary" style="font-size: 3rem;"></i>
+                        <h3 class="mt-2">Giris Yap</h3>
+                        <p class="text-muted">Hesabiniza giris yapin</p>
+                    </div>
+
+                    @if (ViewBag.Error != null)
+                    {
+                        <div class="alert alert-danger">@ViewBag.Error</div>
+                    }
+
+                    @if (ViewBag.EmailNotVerified == true)
+                    {
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            E-posta adresiniz henuz dogrulanmamis.
+                            <form method="post" asp-action="ResendVerification" class="mt-2">
+                                <input type="hidden" name="email" value="@ViewBag.Email" />
+                                <button type="submit" class="btn btn-sm btn-outline-warning">
+                                    <i class="bi bi-arrow-repeat me-1"></i>Dogrulama Mailini Tekrar Gonder
+                                </button>
+                            </form>
+                        </div>
+                    }
+
+                    <form method="post" asp-action="Login">
+                        <div class="mb-3">
+                            <label class="form-label">E-posta Adresi</label>
+                            <input type="email" name="email" class="form-control" placeholder="ornek@@email.com" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Sifre</label>
+                            <input type="password" name="password" class="form-control" placeholder="Sifreniz" required />
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 mb-3">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Giris Yap
+                        </button>
+                    </form>
+
+                    <div class="text-center">
+                        <p class="text-muted mb-0">Hesabiniz yok mu? <a href="/Auth/Register">Kayit olun</a></p>
+                    </div>
+
+                    <hr />
+                    <div class="small text-muted">
+                        <strong>Demo hesaplar:</strong><br />
+                        Admin: admin@@dogalgaz.com / Admin123!<br />
+                        Kullanici: kullanici@@test.com / User1234!
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

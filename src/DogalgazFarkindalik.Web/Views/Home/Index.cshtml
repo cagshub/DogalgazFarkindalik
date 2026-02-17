@@ -1,0 +1,92 @@
+@{
+    ViewData["Title"] = "Ana Sayfa";
+}
+
+<!-- Hero Section -->
+<section class="hero text-white d-flex align-items-center">
+    <div class="container text-center py-5">
+        <h1 class="display-4 fw-bold mb-3">
+            <i class="bi bi-shield-check me-3"></i>Doğalgaz Farkındalık Platformu
+        </h1>
+        <p class="lead mb-4 mx-auto" style="max-width: 700px;">
+            Doğalgaz güvenliği ve verimli kullanımına yönelik farkındalık eğitimi alın,
+            bilginizi test edin ve güvende kalın.
+        </p>
+        <div class="d-flex gap-3 justify-content-center">
+            <a href="/Auth/Register" class="btn btn-accent btn-lg px-4">
+                <i class="bi bi-person-plus me-2"></i>Hemen Başla
+            </a>
+            <a href="/Videos" class="btn btn-outline-light btn-lg px-4">
+                <i class="bi bi-play-circle me-2"></i>Videoları İzle
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Features -->
+<section class="py-5">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card card-hover h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex p-3 mb-3">
+                            <i class="bi bi-play-circle text-primary" style="font-size: 2rem;"></i>
+                        </div>
+                        <h5 class="card-title">Eğitim Videoları</h5>
+                        <p class="card-text text-muted">Yaş grubunuza uygun doğalgaz güvenliği eğitim videolarını izleyin.</p>
+                        <a href="/Videos" class="btn btn-outline-primary">Videolara Git</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card card-hover h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex p-3 mb-3">
+                            <i class="bi bi-controller text-warning" style="font-size: 2rem;"></i>
+                        </div>
+                        <h5 class="card-title">Simülasyonlar</h5>
+                        <p class="card-text text-muted">Gerçekçi senaryolarla doğalgaz güvenliği bilginizi test edin.</p>
+                        <a href="/Simulations" class="btn btn-outline-warning">Simülasyona Başla</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card card-hover h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex p-3 mb-3">
+                            <i class="bi bi-clipboard-check text-success" style="font-size: 2rem;"></i>
+                        </div>
+                        <h5 class="card-title">Anketler</h5>
+                        <p class="card-text text-muted">Farkındalık anketlerini tamamlayın ve puanınızı görün.</p>
+                        <a href="/Surveys" class="btn btn-outline-success">Ankete Katıl</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Stats -->
+<section class="bg-light py-5">
+    <div class="container">
+        <div class="row text-center g-4">
+            <div class="col-md-3">
+                <h2 class="fw-bold text-primary">5+</h2>
+                <p class="text-muted">Eğitim Videosu</p>
+            </div>
+            <div class="col-md-3">
+                <h2 class="fw-bold text-primary">3</h2>
+                <p class="text-muted">Yaş Grubu</p>
+            </div>
+            <div class="col-md-3">
+                <h2 class="fw-bold text-primary">3</h2>
+                <p class="text-muted">Abonelik Tipi</p>
+            </div>
+            <div class="col-md-3">
+                <h2 class="fw-bold text-primary">187</h2>
+                <p class="text-muted">Acil Doğalgaz Hattı</p>
+            </div>
+        </div>
+    </div>
+</section>
