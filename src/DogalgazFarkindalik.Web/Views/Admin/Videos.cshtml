@@ -1,0 +1,83 @@
+@model List<System.Text.Json.JsonElement>
+@{
+    ViewData["Title"] = "Video Yonetimi";
+}
+
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-play-circle me-2"></i>Video Yonetimi</h2>
+        <div>
+            <a href="/Admin/Dashboard" class="btn btn-outline-secondary me-2"><i class="bi bi-arrow-left me-1"></i>Dashboard</a>
+            <a href="/Admin/CreateVideo" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Yeni Video Ekle</a>
+        </div>
+    </div>
+
+    @if (TempData["Success"] is string successMsg)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @successMsg
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] is string errorMsg)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @errorMsg
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Baslik</th>
+                        <th>Sure (sn)</th>
+                        <th>Yas Grubu</th>
+                        <th>Abonelik</th>
+                        <th class="text-end">Islemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Count == 0)
+                    {
+                        <tr><td colspan="5" class="text-center text-muted py-4">Henuz video eklenmemis.</td></tr>
+                    }
+                    @foreach (var video in Model)
+                    {
+                        var id = video.GetProperty("id").GetString();
+                        <tr>
+                            <td>
+                                <strong>@video.GetProperty("title").GetString()</strong>
+                                <br><small class="text-muted">@video.GetProperty("description").GetString()</small>
+                            </td>
+                            <td>@video.GetProperty("durationSec").GetInt32()</td>
+                            <td><span class="badge bg-primary">@video.GetProperty("minAgeGroup").GetString()</span></td>
+                            <td>
+                                @if (video.TryGetProperty("subscriptionFilter", out var sf) && sf.ValueKind != System.Text.Json.JsonValueKind.Null)
+                                {
+                                    <span class="badge bg-secondary">@sf.GetString()</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Tumu</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <a href="/Admin/EditVideo?id=@id" class="btn btn-sm btn-outline-primary me-1">
+                                    <i class="bi bi-pencil"></i> Duzenle
+                                </a>
+                                <form method="post" action="/Admin/DeleteVideo?id=@id" class="d-inline" onsubmit="return confirm('Bu videoyu silmek istediginizden emin misiniz?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i> Sil
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

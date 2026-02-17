@@ -1,0 +1,240 @@
+@model System.Text.Json.JsonElement
+@{
+    ViewData["Title"] = "Anket Duzenle";
+    var id = Model.GetProperty("id").GetString();
+}
+
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-pencil me-2"></i>Anket Duzenle</h2>
+        <a href="/Admin/Surveys" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Geri</a>
+    </div>
+
+    @if (TempData["Error"] is string errorMsg)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @errorMsg
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <form id="surveyForm">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-5">
+                        <label class="form-label">Baslik</label>
+                        <input type="text" id="surveyTitle" class="form-control" value="@Model.GetProperty("title").GetString()" required />
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label">Aciklama</label>
+                        <input type="text" id="surveyDescription" class="form-control" value="@Model.GetProperty("description").GetString()" required />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Aktif mi?</label>
+                        <div class="form-check form-switch mt-2">
+                            <input type="checkbox" class="form-check-input" id="surveyIsActive" checked />
+                            <label class="form-check-label" for="surveyIsActive">Aktif</label>
+                        </div>
+                    </div>
+                </div>
+
+                <hr />
+                <h5>Sorular</h5>
+                <div id="questionsContainer"></div>
+                <button type="button" class="btn btn-outline-success mt-2" onclick="addQuestion()">
+                    <i class="bi bi-plus-lg me-1"></i>Soru Ekle
+                </button>
+
+                <div class="mt-4">
+                    <button type="button" class="btn btn-primary" onclick="submitSurvey()">
+                        <i class="bi bi-check-lg me-1"></i>Guncelle
+                    </button>
+                    <a href="/Admin/Surveys" class="btn btn-outline-secondary ms-2">Iptal</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let questionIndex = 0;
+
+    function addQuestion(text, type, weight, order, ageFilter, subFilter, options) {
+        const container = document.getElementById('questionsContainer');
+        const qIdx = questionIndex++;
+        const div = document.createElement('div');
+        div.className = 'card border mb-3';
+        div.id = `question-${qIdx}`;
+
+        const types = ['SingleChoice', 'MultipleChoice', 'TrueFalse', 'Scale'];
+        const typeOptions = types.map(t =>
+            `<option value="${t}" ${t === (type || 'SingleChoice') ? 'selected' : ''}>${
+                t === 'SingleChoice' ? 'Tek Secim' :
+                t === 'MultipleChoice' ? 'Coklu Secim' :
+                t === 'TrueFalse' ? 'Dogru/Yanlis' : 'Olcek'
+            }</option>`
+        ).join('');
+
+        const ageOptions = ['', 'Child', 'Adult', 'Senior'];
+        const ageSelect = ageOptions.map(a =>
+            `<option value="${a}" ${a === (ageFilter || '') ? 'selected' : ''}>${
+                a === '' ? 'Tumu' : a === 'Child' ? 'Cocuk' : a === 'Adult' ? 'Yetiskin' : 'Yasli'
+            }</option>`
+        ).join('');
+
+        const subOptions = ['', 'Bireysel', 'Merkezi', 'Endustriyel'];
+        const subSelect = subOptions.map(s =>
+            `<option value="${s}" ${s === (subFilter || '') ? 'selected' : ''}>${s === '' ? 'Tumu' : s}</option>`
+        ).join('');
+
+        div.innerHTML = `
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Soru ${qIdx + 1}</strong>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeElement('question-${qIdx}')">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Soru Metni</label>
+                        <input type="text" class="form-control q-text" value="${escapeHtml(text || '')}" required />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Soru Tipi</label>
+                        <select class="form-select q-type">${typeOptions}</select>
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">Agirlik</label>
+                        <input type="number" class="form-control q-weight" value="${weight || 1}" min="1" />
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">Sira</label>
+                        <input type="number" class="form-control q-order" value="${order || qIdx + 1}" min="1" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Yas Filtresi</label>
+                        <select class="form-select q-ageFilter">${ageSelect}</select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Abn. Filtresi</label>
+                        <select class="form-select q-subFilter">${subSelect}</select>
+                    </div>
+                </div>
+                <h6>Secenekler</h6>
+                <div class="options-container"></div>
+                <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addOption(this)">
+                    <i class="bi bi-plus me-1"></i>Secenek Ekle
+                </button>
+            </div>`;
+        container.appendChild(div);
+
+        if (options && options.length > 0) {
+            const optBtn = div.querySelector('.options-container').parentElement.querySelector('button');
+            options.forEach(opt => addOption(optBtn, opt.text, opt.value));
+        }
+    }
+
+    function addOption(btn, text, value) {
+        const container = btn.parentElement.querySelector('.options-container');
+        const div = document.createElement('div');
+        div.className = 'row g-2 mb-2 option-row';
+        div.innerHTML = `
+            <div class="col-md-5">
+                <input type="text" class="form-control opt-text" placeholder="Secenek metni" value="${escapeHtml(text || '')}" required />
+            </div>
+            <div class="col-md-3">
+                <input type="number" class="form-control opt-value" placeholder="Deger (puan)" value="${value || 0}" />
+            </div>
+            <div class="col-md-2">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.option-row').remove()">
+                    <i class="bi bi-x"></i> Kaldir
+                </button>
+            </div>`;
+        container.appendChild(div);
+    }
+
+    function removeElement(id) {
+        document.getElementById(id).remove();
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function submitSurvey() {
+        const data = {
+            title: document.getElementById('surveyTitle').value,
+            description: document.getElementById('surveyDescription').value,
+            isActive: document.getElementById('surveyIsActive').checked,
+            questions: []
+        };
+
+        document.querySelectorAll('#questionsContainer > .card').forEach(qCard => {
+            const question = {
+                text: qCard.querySelector('.q-text').value,
+                type: qCard.querySelector('.q-type').value,
+                weight: parseInt(qCard.querySelector('.q-weight').value) || 1,
+                order: parseInt(qCard.querySelector('.q-order').value) || 1,
+                ageGroupFilter: qCard.querySelector('.q-ageFilter').value || null,
+                subscriptionFilter: qCard.querySelector('.q-subFilter').value || null,
+                options: []
+            };
+            qCard.querySelectorAll('.option-row').forEach(optRow => {
+                question.options.push({
+                    text: optRow.querySelector('.opt-text').value,
+                    value: parseInt(optRow.querySelector('.opt-value').value) || 0
+                });
+            });
+            data.questions.push(question);
+        });
+
+        if (!data.title || !data.description) {
+            alert('Baslik ve aciklama zorunludur.');
+            return;
+        }
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/Admin/EditSurvey?id=@id';
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'formData';
+        input.value = JSON.stringify(data);
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    // Load existing questions
+    @if (Model.TryGetProperty("questions", out var questions))
+    {
+        @foreach (var q in questions.EnumerateArray())
+        {
+            var qText = q.GetProperty("text").GetString()?.Replace("\\", "\\\\").Replace("'", "\\'").Replace("\n", "\\n");
+            var qType = q.GetProperty("type").GetString();
+            var qOrder = q.GetProperty("order").GetInt32();
+            <text>
+            addQuestion('@Html.Raw(qText)', '@qType', 1, @qOrder, '', '', [
+            </text>
+            @if (q.TryGetProperty("options", out var opts))
+            {
+                var first = true;
+                @foreach (var o in opts.EnumerateArray())
+                {
+                    var oText = o.GetProperty("text").GetString()?.Replace("\\", "\\\\").Replace("'", "\\'");
+                    if (!first) { <text>,</text> }
+                    <text>{ text: '@Html.Raw(oText)', value: 0 }</text>
+                    first = false;
+                }
+            }
+            <text>]);
+            </text>
+        }
+    }
+</script>
+}

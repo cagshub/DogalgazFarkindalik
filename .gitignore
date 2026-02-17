@@ -1,0 +1,11 @@
+bin/
+obj/
+*.user
+*.suo
+*.vs/
+.idea/
+.vscode/
+Thumbs.db
+.DS_Store
+docker-compose.override.yml
+appsettings.*.local.json

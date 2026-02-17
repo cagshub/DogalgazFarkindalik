@@ -1,0 +1,67 @@
+@model List<System.Text.Json.JsonElement>
+@{
+    ViewData["Title"] = "Anket Yonetimi";
+}
+
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-clipboard-check me-2"></i>Anket Yonetimi</h2>
+        <div>
+            <a href="/Admin/Dashboard" class="btn btn-outline-secondary me-2"><i class="bi bi-arrow-left me-1"></i>Dashboard</a>
+            <a href="/Admin/CreateSurvey" class="btn btn-warning"><i class="bi bi-plus-lg me-1"></i>Yeni Anket</a>
+        </div>
+    </div>
+
+    @if (TempData["Success"] is string successMsg)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @successMsg
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] is string errorMsg)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @errorMsg
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Baslik</th>
+                        <th>Aciklama</th>
+                        <th class="text-end">Islemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Count == 0)
+                    {
+                        <tr><td colspan="3" class="text-center text-muted py-4">Henuz anket eklenmemis.</td></tr>
+                    }
+                    @foreach (var survey in Model)
+                    {
+                        var id = survey.GetProperty("id").GetString();
+                        <tr>
+                            <td><strong>@survey.GetProperty("title").GetString()</strong></td>
+                            <td><small class="text-muted">@survey.GetProperty("description").GetString()</small></td>
+                            <td class="text-end">
+                                <a href="/Admin/EditSurvey?id=@id" class="btn btn-sm btn-outline-primary me-1">
+                                    <i class="bi bi-pencil"></i> Duzenle
+                                </a>
+                                <form method="post" action="/Admin/DeleteSurvey?id=@id" class="d-inline" onsubmit="return confirm('Bu anketi silmek istediginizden emin misiniz?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i> Sil
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

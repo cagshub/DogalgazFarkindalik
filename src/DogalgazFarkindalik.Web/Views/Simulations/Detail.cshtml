@@ -1,0 +1,58 @@
+@{
+    ViewData["Title"] = "Simülasyon";
+    var sim = (System.Text.Json.JsonElement)ViewBag.Simulation;
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <h3 class="mb-2">@sim.GetProperty("title").GetString()</h3>
+                    <p class="text-muted mb-4">@sim.GetProperty("description").GetString()</p>
+
+                    @if (string.IsNullOrEmpty(Context.Session.GetString("Token")))
+                    {
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            Simülasyonu tamamlamak için <a href="/Auth/Login">giriş yapmanız</a> gerekir.
+                        </div>
+                    }
+
+                    <form method="post" action="/Simulations/Submit/@sim.GetProperty("id").GetString()">
+                        @{
+                            var questions = sim.GetProperty("questions");
+                            int qIndex = 0;
+                        }
+                        @foreach (var q in questions.EnumerateArray())
+                        {
+                            qIndex++;
+                            <div class="card mb-3 border">
+                                <div class="card-body">
+                                    <h6 class="mb-3">
+                                        <span class="badge bg-primary me-2">@qIndex</span>
+                                        @q.GetProperty("text").GetString()
+                                    </h6>
+                                    @foreach (var opt in q.GetProperty("options").EnumerateArray())
+                                    {
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="radio"
+                                                   name="question_@q.GetProperty("id").GetString()"
+                                                   value="@opt.GetProperty("id").GetString()" required />
+                                            <label class="form-check-label">@opt.GetProperty("text").GetString()</label>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        <button type="submit" class="btn btn-accent btn-lg w-100"
+                                @(string.IsNullOrEmpty(Context.Session.GetString("Token")) ? "disabled" : "")>
+                            <i class="bi bi-send me-2"></i>Cevapları Gönder
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
