@@ -19,5 +19,5 @@ RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENV ASPNETCORE_URLS=http://+:5001
+ENV ASPNETCORE_URLS=http://+:${PORT:-5001}
 ENTRYPOINT ["dotnet", "DogalgazFarkindalik.Web.dll"]
