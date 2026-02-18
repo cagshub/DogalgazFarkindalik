@@ -24,7 +24,7 @@ services:
       dockerfile: src/DogalgazFarkindalik.API/Dockerfile
     container_name: dogalgaz-api
     ports:
-      - "5000:5000"
+      - "5000:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__Default=Host=dogalgaz-db;Port=5432;Database=dogalgaz_db;Username=postgres;Password=postgres123
@@ -38,6 +38,7 @@ services:
       - Email__SenderPassword=ihei sezx ngfm tjok
       - Email__SenderName=Dogalgaz Farkindalik Platformu
       - Email__VerificationTokenExpiryHours=24
+      - Cors__AllowedOrigins=http://localhost:5001,https://localhost:5002
       - App__BaseUrl=http://localhost:5001
     depends_on:
       dogalgaz-db:
@@ -50,10 +51,10 @@ services:
       dockerfile: src/DogalgazFarkindalik.Web/Dockerfile
     container_name: dogalgaz-web
     ports:
-      - "5001:5001"
+      - "5001:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ApiBaseUrl=http://dogalgaz-api:5000
+      - ApiBaseUrl=http://dogalgaz-api:8080
     depends_on:
       - dogalgaz-api
 

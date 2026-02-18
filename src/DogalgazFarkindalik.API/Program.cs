@@ -97,10 +97,23 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowWeb", policy =>
-        policy.WithOrigins("http://localhost:5001", "https://localhost:5002")
-            .AllowAnyMethod()
-            .AllowAnyHeader()
-            .AllowCredentials());
+    {
+        var allowedOrigins = builder.Configuration["Cors__AllowedOrigins"];
+        if (!string.IsNullOrEmpty(allowedOrigins))
+        {
+            policy.WithOrigins(allowedOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .AllowCredentials();
+        }
+        else
+        {
+            policy.WithOrigins("http://localhost:5001", "https://localhost:5002")
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .AllowCredentials();
+        }
+    });
 });
 
 var app = builder.Build();
