@@ -32,6 +32,11 @@ public class AuthController : Controller
             HttpContext.Session.SetString("Role", result.GetProperty("role").GetString()!);
             HttpContext.Session.SetString("Email", result.GetProperty("email").GetString()!);
 
+            if (result.TryGetProperty("ageGroup", out var ag) && ag.ValueKind != JsonValueKind.Null)
+                HttpContext.Session.SetString("AgeGroup", ag.GetString()!);
+            if (result.TryGetProperty("subscriptionType", out var st) && st.ValueKind != JsonValueKind.Null)
+                HttpContext.Session.SetString("SubscriptionType", st.GetString()!);
+
             var role = result.GetProperty("role").GetString();
             if (role == "Admin")
                 return RedirectToAction("Dashboard", "Admin");

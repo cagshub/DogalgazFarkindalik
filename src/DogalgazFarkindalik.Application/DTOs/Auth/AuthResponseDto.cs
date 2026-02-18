@@ -7,5 +7,7 @@ public record AuthResponseDto(
     string Email,
     string FullName,
     string Role,
-    bool IsEmailVerified
+    bool IsEmailVerified,
+    string? AgeGroup = null,
+    string? SubscriptionType = null
 );
