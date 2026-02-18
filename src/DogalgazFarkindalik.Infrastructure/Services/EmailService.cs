@@ -1,5 +1,8 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Mail;
+using System.Text;
+using System.Text.Json;
 using DogalgazFarkindalik.Application.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -10,31 +13,112 @@ public class EmailService : IEmailService
 {
     private readonly IConfiguration _configuration;
     private readonly ILogger<EmailService> _logger;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public EmailService(IConfiguration configuration, ILogger<EmailService> logger)
+    public EmailService(IConfiguration configuration, ILogger<EmailService> logger, IHttpClientFactory httpClientFactory)
     {
         _configuration = configuration;
         _logger = logger;
+        _httpClientFactory = httpClientFactory;
     }
 
     public async Task SendVerificationEmailAsync(string toEmail, string fullName, string verificationToken, CancellationToken ct = default)
+    {
+        var apiBaseUrl = _configuration["App:BaseUrl"] ?? "http://localhost:5001";
+        var verificationUrl = $"{apiBaseUrl}/Auth/VerifyEmail?token={verificationToken}";
+        var senderName = _configuration["Email:SenderName"] ?? "Dogalgaz Farkindalik Platformu";
+
+        var htmlBody = BuildVerificationHtml(fullName, verificationUrl);
+
+        // Resend API key varsa HTTP API kullan (Railway icin)
+        var resendApiKey = _configuration["Email:ResendApiKey"];
+        if (!string.IsNullOrEmpty(resendApiKey))
+        {
+            await SendViaResendAsync(resendApiKey, toEmail, senderName, htmlBody, ct);
+            return;
+        }
+
+        // Yoksa SMTP kullan (localhost icin)
+        await SendViaSmtpAsync(toEmail, senderName, htmlBody, ct);
+    }
+
+    private async Task SendViaResendAsync(string apiKey, string toEmail, string senderName, string htmlBody, CancellationToken ct)
+    {
+        var client = _httpClientFactory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+
+        var payload = new
+        {
+            from = $"{senderName} <onboarding@resend.dev>",
+            to = new[] { toEmail },
+            subject = "E-posta Adresinizi Dogrulayin - Dogalgaz Farkindalik Platformu",
+            html = htmlBody
+        };
+
+        var json = JsonSerializer.Serialize(payload);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        var response = await client.PostAsync("https://api.resend.com/emails", content, ct);
+
+        if (response.IsSuccessStatusCode)
+        {
+            _logger.LogInformation("Resend ile dogrulama e-postasi gonderildi: {Email}", toEmail);
+        }
+        else
+        {
+            var errorBody = await response.Content.ReadAsStringAsync(ct);
+            _logger.LogError("Resend e-posta hatasi: {Status} - {Body}", response.StatusCode, errorBody);
+            throw new InvalidOperationException($"Resend e-posta gonderilemedi: {response.StatusCode}");
+        }
+    }
+
+    private async Task SendViaSmtpAsync(string toEmail, string senderName, string htmlBody, CancellationToken ct)
     {
         var smtpHost = _configuration["Email:SmtpHost"] ?? "smtp.gmail.com";
         var smtpPort = int.Parse(_configuration["Email:SmtpPort"] ?? "587");
         var senderEmail = _configuration["Email:SenderEmail"];
         var senderPassword = _configuration["Email:SenderPassword"];
-        var senderName = _configuration["Email:SenderName"] ?? "Dogalgaz Farkindalik Platformu";
 
         if (string.IsNullOrEmpty(senderEmail) || string.IsNullOrEmpty(senderPassword))
         {
-            _logger.LogWarning("SMTP ayarlari yapilandirilmamis. E-posta gonderilemedi: {Email}, Token: {Token}", toEmail, verificationToken);
-            return;
+            _logger.LogWarning("SMTP ayarlari yapilandirilmamis. E-posta gonderilemedi: {Email}", toEmail);
+            throw new InvalidOperationException("SMTP ayarlari eksik.");
         }
 
-        var apiBaseUrl = _configuration["App:BaseUrl"] ?? "http://localhost:5001";
-        var verificationUrl = $"{apiBaseUrl}/Auth/VerifyEmail?token={verificationToken}";
+        using var smtpClient = new SmtpClient(smtpHost, smtpPort)
+        {
+            Credentials = new NetworkCredential(senderEmail, senderPassword),
+            EnableSsl = true,
+            Timeout = 5000
+        };
 
-        var htmlBody = $@"
+        var mailMessage = new MailMessage
+        {
+            From = new MailAddress(senderEmail, senderName),
+            Subject = "E-posta Adresinizi Dogrulayin - Dogalgaz Farkindalik Platformu",
+            Body = htmlBody,
+            IsBodyHtml = true
+        };
+        mailMessage.To.Add(toEmail);
+
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeoutCts.CancelAfter(TimeSpan.FromSeconds(5));
+
+        try
+        {
+            await smtpClient.SendMailAsync(mailMessage, timeoutCts.Token);
+            _logger.LogInformation("SMTP ile dogrulama e-postasi gonderildi: {Email}", toEmail);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "SMTP e-posta gonderimi basarisiz: {Email}", toEmail);
+            throw;
+        }
+    }
+
+    private static string BuildVerificationHtml(string fullName, string verificationUrl)
+    {
+        return $@"
 <!DOCTYPE html>
 <html>
 <head>
@@ -74,36 +158,5 @@ public class EmailService : IEmailService
     </div>
 </body>
 </html>";
-
-        using var smtpClient = new SmtpClient(smtpHost, smtpPort)
-        {
-            Credentials = new NetworkCredential(senderEmail, senderPassword),
-            EnableSsl = true,
-            Timeout = 5000 // 5 saniye — SMTP erisilemezse hizli vazgec
-        };
-
-        var mailMessage = new MailMessage
-        {
-            From = new MailAddress(senderEmail, senderName),
-            Subject = "E-posta Adresinizi Dogrulayin - Dogalgaz Farkindalik Platformu",
-            Body = htmlBody,
-            IsBodyHtml = true
-        };
-        mailMessage.To.Add(toEmail);
-
-        // Kisa sureli timeout ile gondermeyi dene
-        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        timeoutCts.CancelAfter(TimeSpan.FromSeconds(5));
-
-        try
-        {
-            await smtpClient.SendMailAsync(mailMessage, timeoutCts.Token);
-            _logger.LogInformation("Dogrulama e-postasi gonderildi: {Email}", toEmail);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "E-posta gonderimi basarisiz: {Email}", toEmail);
-            throw;
-        }
     }
 }
