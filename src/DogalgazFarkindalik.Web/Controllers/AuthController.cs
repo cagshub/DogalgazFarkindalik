@@ -78,6 +78,15 @@ public class AuthController : Controller
 
         if (response.IsSuccessStatusCode)
         {
+            var successJson = await response.Content.ReadAsStringAsync();
+            var successResult = JsonSerializer.Deserialize<JsonElement>(successJson);
+
+            if (successResult.TryGetProperty("isEmailVerified", out var verified) && verified.GetBoolean())
+            {
+                TempData["Success"] = "Kayit basarili! Simdi giris yapabilirsiniz.";
+                return RedirectToAction("Login");
+            }
+
             TempData["VerificationEmail"] = email;
             return RedirectToAction("VerificationPending");
         }
