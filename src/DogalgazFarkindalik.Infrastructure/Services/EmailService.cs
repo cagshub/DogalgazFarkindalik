@@ -78,7 +78,8 @@ public class EmailService : IEmailService
         using var smtpClient = new SmtpClient(smtpHost, smtpPort)
         {
             Credentials = new NetworkCredential(senderEmail, senderPassword),
-            EnableSsl = true
+            EnableSsl = true,
+            Timeout = 5000 // 5 saniye — SMTP erisilemezse hizli vazgec
         };
 
         var mailMessage = new MailMessage
@@ -90,9 +91,13 @@ public class EmailService : IEmailService
         };
         mailMessage.To.Add(toEmail);
 
+        // Kisa sureli timeout ile gondermeyi dene
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeoutCts.CancelAfter(TimeSpan.FromSeconds(5));
+
         try
         {
-            await smtpClient.SendMailAsync(mailMessage, ct);
+            await smtpClient.SendMailAsync(mailMessage, timeoutCts.Token);
             _logger.LogInformation("Dogrulama e-postasi gonderildi: {Email}", toEmail);
         }
         catch (Exception ex)
