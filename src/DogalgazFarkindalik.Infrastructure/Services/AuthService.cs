@@ -60,14 +60,26 @@ public class AuthService : IAuthService
         await _context.SaveChangesAsync(ct);
 
         // Send verification email
+        var emailSent = false;
         try
         {
             await _emailService.SendVerificationEmailAsync(user.Email, user.FullName, verificationToken, ct);
             _logger.LogInformation("Dogrulama maili gonderildi: {Email}", user.Email);
+            emailSent = true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Dogrulama maili gonderilemedi: {Email}. Hata: {Message}", user.Email, ex.Message);
+        }
+
+        // E-posta gonderilemezse (SMTP engeli vb.) kullaniciyi otomatik dogrula
+        if (!emailSent)
+        {
+            user.IsEmailVerified = true;
+            user.EmailVerificationToken = null;
+            user.EmailVerificationTokenExpiry = null;
+            await _context.SaveChangesAsync(ct);
+            _logger.LogWarning("SMTP erisilemedi, kullanici otomatik dogrulandi: {Email}", user.Email);
         }
 
         return new AuthResponseDto(
@@ -77,7 +89,7 @@ public class AuthService : IAuthService
             Email: user.Email,
             FullName: user.FullName,
             Role: user.Role.ToString(),
-            IsEmailVerified: false
+            IsEmailVerified: user.IsEmailVerified
         );
     }
 
