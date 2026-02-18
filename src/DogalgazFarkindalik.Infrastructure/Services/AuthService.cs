@@ -5,6 +5,7 @@ using DogalgazFarkindalik.Domain.Enums;
 using DogalgazFarkindalik.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace DogalgazFarkindalik.Infrastructure.Services;
 
@@ -14,13 +15,15 @@ public class AuthService : IAuthService
     private readonly IJwtService _jwtService;
     private readonly IEmailService _emailService;
     private readonly IConfiguration _configuration;
+    private readonly ILogger<AuthService> _logger;
 
-    public AuthService(AppDbContext context, IJwtService jwtService, IEmailService emailService, IConfiguration configuration)
+    public AuthService(AppDbContext context, IJwtService jwtService, IEmailService emailService, IConfiguration configuration, ILogger<AuthService> logger)
     {
         _context = context;
         _jwtService = jwtService;
         _emailService = emailService;
         _configuration = configuration;
+        _logger = logger;
     }
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto, CancellationToken ct = default)
@@ -56,14 +59,15 @@ public class AuthService : IAuthService
         _context.UserProfiles.Add(profile);
         await _context.SaveChangesAsync(ct);
 
-        // Send verification email (fire-and-forget for better UX, errors are logged)
+        // Send verification email
         try
         {
             await _emailService.SendVerificationEmailAsync(user.Email, user.FullName, verificationToken, ct);
+            _logger.LogInformation("Dogrulama maili gonderildi: {Email}", user.Email);
         }
-        catch
+        catch (Exception ex)
         {
-            // Email sending failure should not block registration
+            _logger.LogError(ex, "Dogrulama maili gonderilemedi: {Email}. Hata: {Message}", user.Email, ex.Message);
         }
 
         return new AuthResponseDto(
