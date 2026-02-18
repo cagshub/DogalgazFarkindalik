@@ -8,7 +8,7 @@
         <p class="text-muted">Doğalgaz güvenliği hakkında eğitim videolarını izleyin</p>
     </div>
 
-    @if (ViewBag.IsLoggedIn == true && (ViewBag.AgeGroup != null || ViewBag.SubscriptionType != null))
+    @if (ViewBag.AgeGroup != null || ViewBag.SubscriptionType != null)
     {
         <div class="alert alert-info text-center mb-4">
             <i class="bi bi-person-check me-1"></i>
@@ -23,13 +23,6 @@
             {
                 <span class="badge bg-secondary ms-1">@ViewBag.SubscriptionType</span>
             }
-        </div>
-    }
-    else if (ViewBag.IsLoggedIn != true)
-    {
-        <div class="alert alert-warning text-center mb-4">
-            <i class="bi bi-info-circle me-1"></i>
-            Profilinize özel içerikleri görmek için <a href="/Auth/Login" class="alert-link">giriş yapın</a>.
         </div>
     }
 

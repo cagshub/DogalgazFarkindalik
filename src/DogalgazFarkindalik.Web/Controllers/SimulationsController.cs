@@ -14,11 +14,12 @@ public class SimulationsController : Controller
 
     public async Task<IActionResult> Index()
     {
-        var client = _httpClientFactory.CreateClient("DogalgazAPI");
-
         var token = HttpContext.Session.GetString("Token");
-        if (!string.IsNullOrEmpty(token))
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        if (string.IsNullOrEmpty(token))
+            return RedirectToAction("Login", "Auth");
+
+        var client = _httpClientFactory.CreateClient("DogalgazAPI");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var query = "/api/simulations?";
 

@@ -13,11 +13,12 @@ public class VideosController : Controller
 
     public async Task<IActionResult> Index()
     {
-        var client = _httpClientFactory.CreateClient("DogalgazAPI");
-
         var token = HttpContext.Session.GetString("Token");
-        if (!string.IsNullOrEmpty(token))
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        if (string.IsNullOrEmpty(token))
+            return RedirectToAction("Login", "Auth");
+
+        var client = _httpClientFactory.CreateClient("DogalgazAPI");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var query = "/api/videos?";
 
@@ -41,7 +42,6 @@ public class VideosController : Controller
             ViewBag.Videos = JsonSerializer.Deserialize<JsonElement>("[]");
         }
 
-        ViewBag.IsLoggedIn = !string.IsNullOrEmpty(token);
         ViewBag.AgeGroup = ageGroup;
         ViewBag.SubscriptionType = subscriptionType;
         return View();
