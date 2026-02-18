@@ -115,7 +115,8 @@ public class AuthService : IAuthService
         });
         await _context.SaveChangesAsync(ct);
 
-        return GenerateResponse(user);
+        var profile = await _context.UserProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id, ct);
+        return GenerateResponse(user, profile);
     }
 
     public Task<AuthResponseDto> RefreshTokenAsync(string refreshToken, CancellationToken ct = default)
@@ -166,7 +167,7 @@ public class AuthService : IAuthService
         await _emailService.SendVerificationEmailAsync(user.Email, user.FullName, verificationToken, ct);
     }
 
-    private AuthResponseDto GenerateResponse(User user)
+    private AuthResponseDto GenerateResponse(User user, UserProfile? profile = null)
     {
         var accessToken = _jwtService.GenerateAccessToken(user);
         var refreshToken = _jwtService.GenerateRefreshToken();
@@ -178,7 +179,9 @@ public class AuthService : IAuthService
             Email: user.Email,
             FullName: user.FullName,
             Role: user.Role.ToString(),
-            IsEmailVerified: user.IsEmailVerified
+            IsEmailVerified: user.IsEmailVerified,
+            AgeGroup: profile?.AgeGroup.ToString(),
+            SubscriptionType: profile?.SubscriptionType.ToString()
         );
     }
 

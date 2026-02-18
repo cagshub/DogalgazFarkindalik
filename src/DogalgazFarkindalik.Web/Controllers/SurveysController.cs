@@ -21,7 +21,17 @@ public class SurveysController : Controller
         var client = _httpClientFactory.CreateClient("DogalgazAPI");
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        var response = await client.GetAsync("/api/surveys/active");
+        var query = "/api/surveys/active?";
+
+        var ageGroup = HttpContext.Session.GetString("AgeGroup");
+        var subscriptionType = HttpContext.Session.GetString("SubscriptionType");
+
+        if (!string.IsNullOrEmpty(ageGroup))
+            query += $"ageGroup={ageGroup}&";
+        if (!string.IsNullOrEmpty(subscriptionType))
+            query += $"subscriptionType={subscriptionType}&";
+
+        var response = await client.GetAsync(query.TrimEnd('&', '?'));
 
         if (response.IsSuccessStatusCode)
         {

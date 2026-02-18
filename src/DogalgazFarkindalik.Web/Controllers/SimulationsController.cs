@@ -15,7 +15,22 @@ public class SimulationsController : Controller
     public async Task<IActionResult> Index()
     {
         var client = _httpClientFactory.CreateClient("DogalgazAPI");
-        var response = await client.GetAsync("/api/simulations");
+
+        var token = HttpContext.Session.GetString("Token");
+        if (!string.IsNullOrEmpty(token))
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var query = "/api/simulations?";
+
+        var ageGroup = HttpContext.Session.GetString("AgeGroup");
+        var subscriptionType = HttpContext.Session.GetString("SubscriptionType");
+
+        if (!string.IsNullOrEmpty(ageGroup))
+            query += $"ageGroup={ageGroup}&";
+        if (!string.IsNullOrEmpty(subscriptionType))
+            query += $"subscriptionType={subscriptionType}&";
+
+        var response = await client.GetAsync(query.TrimEnd('&', '?'));
 
         if (response.IsSuccessStatusCode)
         {
