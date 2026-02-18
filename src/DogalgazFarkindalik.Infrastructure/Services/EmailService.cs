@@ -27,10 +27,19 @@ public class EmailService : IEmailService
         var apiBaseUrl = _configuration["App:BaseUrl"] ?? "http://localhost:5001";
         var verificationUrl = $"{apiBaseUrl}/Auth/VerifyEmail?token={verificationToken}";
         var senderName = _configuration["Email:SenderName"] ?? "Dogalgaz Farkindalik Platformu";
+        var senderEmail = _configuration["Email:SenderEmail"] ?? "noreply@dogalgaz.com";
 
         var htmlBody = BuildVerificationHtml(fullName, verificationUrl);
 
-        // Resend API key varsa HTTP API kullan (Railway icin)
+        // 1. Brevo API key varsa Brevo kullan (herkese gonderebilir)
+        var brevoApiKey = _configuration["Email:BrevoApiKey"];
+        if (!string.IsNullOrEmpty(brevoApiKey))
+        {
+            await SendViaBrevoAsync(brevoApiKey, toEmail, senderEmail, senderName, htmlBody, ct);
+            return;
+        }
+
+        // 2. Resend API key varsa Resend kullan
         var resendApiKey = _configuration["Email:ResendApiKey"];
         if (!string.IsNullOrEmpty(resendApiKey))
         {
@@ -38,8 +47,38 @@ public class EmailService : IEmailService
             return;
         }
 
-        // Yoksa SMTP kullan (localhost icin)
+        // 3. Yoksa SMTP kullan (localhost icin)
         await SendViaSmtpAsync(toEmail, senderName, htmlBody, ct);
+    }
+
+    private async Task SendViaBrevoAsync(string apiKey, string toEmail, string senderEmail, string senderName, string htmlBody, CancellationToken ct)
+    {
+        var client = _httpClientFactory.CreateClient();
+        client.DefaultRequestHeaders.Add("api-key", apiKey);
+
+        var payload = new
+        {
+            sender = new { name = senderName, email = senderEmail },
+            to = new[] { new { email = toEmail } },
+            subject = "E-posta Adresinizi Dogrulayin - Dogalgaz Farkindalik Platformu",
+            htmlContent = htmlBody
+        };
+
+        var json = JsonSerializer.Serialize(payload);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        var response = await client.PostAsync("https://api.brevo.com/v3/smtp/email", content, ct);
+
+        if (response.IsSuccessStatusCode)
+        {
+            _logger.LogInformation("Brevo ile dogrulama e-postasi gonderildi: {Email}", toEmail);
+        }
+        else
+        {
+            var errorBody = await response.Content.ReadAsStringAsync(ct);
+            _logger.LogError("Brevo e-posta hatasi: {Status} - {Body}", response.StatusCode, errorBody);
+            throw new InvalidOperationException($"Brevo e-posta gonderilemedi: {response.StatusCode}");
+        }
     }
 
     private async Task SendViaResendAsync(string apiKey, string toEmail, string senderName, string htmlBody, CancellationToken ct)
