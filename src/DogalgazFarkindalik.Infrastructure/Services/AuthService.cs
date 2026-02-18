@@ -28,8 +28,20 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto, CancellationToken ct = default)
     {
-        if (await _context.Users.AnyAsync(u => u.Email == dto.Email, ct))
-            throw new InvalidOperationException("Bu e-posta adresi zaten kayitli.");
+        var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email, ct);
+        if (existingUser is not null)
+        {
+            if (existingUser.IsEmailVerified)
+                throw new InvalidOperationException("Bu e-posta adresi zaten kayitli.");
+
+            // Dogrulanmamis eski hesabi sil, yeniden kayit olsun
+            var oldProfile = await _context.UserProfiles.FirstOrDefaultAsync(p => p.UserId == existingUser.Id, ct);
+            if (oldProfile is not null)
+                _context.UserProfiles.Remove(oldProfile);
+            _context.Users.Remove(existingUser);
+            await _context.SaveChangesAsync(ct);
+            _logger.LogInformation("Dogrulanmamis eski hesap silindi, yeniden kayit: {Email}", dto.Email);
+        }
 
         var verificationToken = Guid.NewGuid().ToString("N");
         var expiryHours = int.Parse(_configuration["Email:VerificationTokenExpiryHours"] ?? "24");
