@@ -22,13 +22,18 @@ public class VideosController : Controller
 
         var query = "/api/videos?";
 
+        var role = HttpContext.Session.GetString("Role");
         var ageGroup = HttpContext.Session.GetString("AgeGroup");
         var subscriptionType = HttpContext.Session.GetString("SubscriptionType");
 
-        if (!string.IsNullOrEmpty(ageGroup))
-            query += $"ageGroup={ageGroup}&";
-        if (!string.IsNullOrEmpty(subscriptionType))
-            query += $"subscriptionType={subscriptionType}&";
+        // Admin tum icerikleri gorur, filtreleme yapilmaz
+        if (role != "Admin")
+        {
+            if (!string.IsNullOrEmpty(ageGroup))
+                query += $"ageGroup={ageGroup}&";
+            if (!string.IsNullOrEmpty(subscriptionType))
+                query += $"subscriptionType={subscriptionType}&";
+        }
 
         var response = await client.GetAsync(query.TrimEnd('&', '?'));
 

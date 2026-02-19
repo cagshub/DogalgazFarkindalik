@@ -23,13 +23,17 @@ public class SimulationsController : Controller
 
         var query = "/api/simulations?";
 
+        var role = HttpContext.Session.GetString("Role");
         var ageGroup = HttpContext.Session.GetString("AgeGroup");
         var subscriptionType = HttpContext.Session.GetString("SubscriptionType");
 
-        if (!string.IsNullOrEmpty(ageGroup))
-            query += $"ageGroup={ageGroup}&";
-        if (!string.IsNullOrEmpty(subscriptionType))
-            query += $"subscriptionType={subscriptionType}&";
+        if (role != "Admin")
+        {
+            if (!string.IsNullOrEmpty(ageGroup))
+                query += $"ageGroup={ageGroup}&";
+            if (!string.IsNullOrEmpty(subscriptionType))
+                query += $"subscriptionType={subscriptionType}&";
+        }
 
         var response = await client.GetAsync(query.TrimEnd('&', '?'));
 
