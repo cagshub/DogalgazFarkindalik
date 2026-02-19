@@ -34,6 +34,13 @@ public class SurveyService : ISurveyService
             .ToListAsync(ct);
     }
 
+    public async Task<List<SurveyListDto>> GetAllSurveysAsync(CancellationToken ct = default)
+    {
+        return await _context.Surveys
+            .Select(s => new SurveyListDto(s.Id, s.Title, s.Description))
+            .ToListAsync(ct);
+    }
+
     public async Task<SurveyDetailDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         var survey = await _context.Surveys
@@ -46,8 +53,8 @@ public class SurveyService : ISurveyService
         return new SurveyDetailDto(
             survey.Id, survey.Title, survey.Description,
             survey.Questions.Select(q => new SurveyQuestionDto(
-                q.Id, q.Text, q.Type, q.Order,
-                q.Options.Select(o => new SurveyOptionDto(o.Id, o.Text)).ToList()
+                q.Id, q.Text, q.Type, q.Weight, q.Order, q.AgeGroupFilter, q.SubscriptionFilter,
+                q.Options.Select(o => new SurveyOptionDto(o.Id, o.Text, o.Value)).ToList()
             )).ToList()
         );
     }

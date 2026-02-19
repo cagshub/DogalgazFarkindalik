@@ -27,7 +27,7 @@ public record SimulationQuestionDto(
     List<SimulationOptionDto> Options
 );
 
-public record SimulationOptionDto(Guid Id, string Text);
+public record SimulationOptionDto(Guid Id, string Text, bool IsCorrect, string? Explanation);
 
 public record SubmitSimulationAnswerDto(Guid QuestionId, Guid SelectedOptionId);
 

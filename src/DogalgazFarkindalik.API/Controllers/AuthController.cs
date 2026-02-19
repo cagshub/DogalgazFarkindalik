@@ -78,6 +78,30 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
+    /// Refresh token ile yeni access token alir
+    /// </summary>
+    /// <param name="dto">Refresh token</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Yeni JWT access token ve refresh token</returns>
+    /// <response code="200">Token basariyla yenilendi</response>
+    /// <response code="401">Gecersiz veya suresi dolmus refresh token</response>
+    [HttpPost("refresh")]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<AuthResponseDto>> Refresh([FromBody] RefreshTokenDto dto, CancellationToken ct)
+    {
+        try
+        {
+            var result = await _authService.RefreshTokenAsync(dto.RefreshToken, ct);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// E-posta dogrulama tokeni ile e-posta adresini dogrular
     /// </summary>
     /// <param name="token">Dogrulama tokeni (kayit sirasinda e-posta ile gonderilir)</param>
@@ -127,3 +151,4 @@ public class AuthController : ControllerBase
 }
 
 public record ResendVerificationDto(string Email);
+public record RefreshTokenDto(string RefreshToken);

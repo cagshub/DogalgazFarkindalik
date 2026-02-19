@@ -144,12 +144,33 @@ public class AuthService : IAuthService
         await _context.SaveChangesAsync(ct);
 
         var profile = await _context.UserProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id, ct);
-        return GenerateResponse(user, profile);
+
+        var response = GenerateResponse(user, profile);
+
+        // Refresh token'i DB'ye kaydet (7 gun gecerli)
+        user.RefreshToken = response.RefreshToken;
+        user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
+        await _context.SaveChangesAsync(ct);
+
+        return response;
     }
 
-    public Task<AuthResponseDto> RefreshTokenAsync(string refreshToken, CancellationToken ct = default)
+    public async Task<AuthResponseDto> RefreshTokenAsync(string refreshToken, CancellationToken ct = default)
     {
-        throw new NotImplementedException("Refresh token henuz implemente edilmedi.");
+        var user = await _context.Users.FirstOrDefaultAsync(
+            u => u.RefreshToken == refreshToken && u.RefreshTokenExpiry > DateTime.UtcNow, ct)
+            ?? throw new UnauthorizedAccessException("Gecersiz veya suresi dolmus refresh token.");
+
+        var profile = await _context.UserProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id, ct);
+
+        var response = GenerateResponse(user, profile);
+
+        // Yeni refresh token'i kaydet
+        user.RefreshToken = response.RefreshToken;
+        user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
+        await _context.SaveChangesAsync(ct);
+
+        return response;
     }
 
     public async Task<bool> VerifyEmailAsync(string token, CancellationToken ct = default)
