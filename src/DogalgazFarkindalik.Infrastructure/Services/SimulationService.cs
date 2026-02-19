@@ -43,7 +43,7 @@ public class SimulationService : ISimulationService
             sim.Id, sim.Title, sim.Description, sim.MinAgeGroup, sim.SubscriptionFilter,
             sim.Questions.Select(q => new SimulationQuestionDto(
                 q.Id, q.Text, q.ImageUrl, q.Order,
-                q.Options.Select(o => new SimulationOptionDto(o.Id, o.Text)).ToList()
+                q.Options.Select(o => new SimulationOptionDto(o.Id, o.Text, o.IsCorrect, o.Explanation)).ToList()
             )).ToList()
         );
     }

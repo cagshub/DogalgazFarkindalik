@@ -15,11 +15,14 @@ public record SurveyQuestionDto(
     Guid Id,
     string Text,
     QuestionType Type,
+    int Weight,
     int Order,
+    AgeGroup? AgeGroupFilter,
+    SubscriptionType? SubscriptionFilter,
     List<SurveyOptionDto> Options
 );
 
-public record SurveyOptionDto(Guid Id, string Text);
+public record SurveyOptionDto(Guid Id, string Text, int Value);
 
 public record SubmitSurveyResponseDto(List<SurveyAnswerDto> Answers);
 

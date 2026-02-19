@@ -15,6 +15,10 @@ public class User : BaseEntity
     public string? EmailVerificationToken { get; set; }
     public DateTime? EmailVerificationTokenExpiry { get; set; }
 
+    // Refresh token
+    public string? RefreshToken { get; set; }
+    public DateTime? RefreshTokenExpiry { get; set; }
+
     // Navigation
     public UserProfile? Profile { get; set; }
     public ICollection<SurveyResponse> SurveyResponses { get; set; } = new List<SurveyResponse>();

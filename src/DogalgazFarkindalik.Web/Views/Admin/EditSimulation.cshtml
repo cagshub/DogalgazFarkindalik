@@ -229,8 +229,12 @@
                 @foreach (var o in opts.EnumerateArray())
                 {
                     var oText = o.GetProperty("text").GetString()?.Replace("\\", "\\\\").Replace("'", "\\'");
+                    var oCorrect = o.GetProperty("isCorrect").GetBoolean() ? "true" : "false";
+                    var oExpl = o.TryGetProperty("explanation", out var explVal) && explVal.ValueKind != System.Text.Json.JsonValueKind.Null
+                        ? explVal.GetString()?.Replace("\\", "\\\\").Replace("'", "\\'") ?? ""
+                        : "";
                     if (!first) { <text>,</text> }
-                    <text>{ text: '@Html.Raw(oText)', isCorrect: false, explanation: '' }</text>
+                    <text>{ text: '@Html.Raw(oText)', isCorrect: @oCorrect, explanation: '@Html.Raw(oExpl)' }</text>
                     first = false;
                 }
             }

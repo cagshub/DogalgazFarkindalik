@@ -217,9 +217,12 @@
         {
             var qText = q.GetProperty("text").GetString()?.Replace("\\", "\\\\").Replace("'", "\\'").Replace("\n", "\\n");
             var qType = q.GetProperty("type").GetString();
+            var qWeight = q.GetProperty("weight").GetInt32();
             var qOrder = q.GetProperty("order").GetInt32();
+            var qAgeFilter = q.TryGetProperty("ageGroupFilter", out var agfVal) && agfVal.ValueKind != System.Text.Json.JsonValueKind.Null ? agfVal.GetString() : "";
+            var qSubFilter = q.TryGetProperty("subscriptionFilter", out var sfVal) && sfVal.ValueKind != System.Text.Json.JsonValueKind.Null ? sfVal.GetString() : "";
             <text>
-            addQuestion('@Html.Raw(qText)', '@qType', 1, @qOrder, '', '', [
+            addQuestion('@Html.Raw(qText)', '@qType', @qWeight, @qOrder, '@qAgeFilter', '@qSubFilter', [
             </text>
             @if (q.TryGetProperty("options", out var opts))
             {
@@ -227,8 +230,9 @@
                 @foreach (var o in opts.EnumerateArray())
                 {
                     var oText = o.GetProperty("text").GetString()?.Replace("\\", "\\\\").Replace("'", "\\'");
+                    var oValue = o.GetProperty("value").GetInt32();
                     if (!first) { <text>,</text> }
-                    <text>{ text: '@Html.Raw(oText)', value: 0 }</text>
+                    <text>{ text: '@Html.Raw(oText)', value: @oValue }</text>
                     first = false;
                 }
             }

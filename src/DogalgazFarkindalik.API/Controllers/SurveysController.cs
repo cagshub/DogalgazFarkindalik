@@ -21,6 +21,21 @@ public class SurveysController : ControllerBase
         => _surveyService = surveyService;
 
     /// <summary>
+    /// Tum anketleri listeler (aktif ve inaktif dahil). Admin yetkisi gerektirir.
+    /// </summary>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Tum anket listesi</returns>
+    /// <response code="200">Anket listesi basariyla getirildi</response>
+    [HttpGet]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(typeof(List<SurveyListDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<List<SurveyListDto>>> GetAll(CancellationToken ct)
+    {
+        var list = await _surveyService.GetAllSurveysAsync(ct);
+        return Ok(list);
+    }
+
+    /// <summary>
     /// Aktif anketleri listeler (yas grubu ve abonelik tipine gore filtreleme destekler)
     /// </summary>
     /// <param name="ageGroup">Yas grubu filtresi (Child, Adult, Senior)</param>

@@ -256,7 +256,7 @@ public class AdminController : Controller
         if (!IsAdmin()) return RedirectToAction("Login", "Auth");
 
         var client = CreateAuthorizedClient();
-        var response = await client.GetAsync("/api/surveys/active");
+        var response = await client.GetAsync("/api/surveys");
         var surveys = new List<JsonElement>();
 
         if (response.IsSuccessStatusCode)
