@@ -18,7 +18,10 @@ public class SimulationService : ISimulationService
         var query = _context.Simulations.Where(s => s.IsPublished).AsQueryable();
 
         if (ageGroup.HasValue)
-            query = query.Where(s => s.MinAgeGroup <= ageGroup.Value);
+        {
+            var allowedGroups = GetAllowedAgeGroups(ageGroup.Value);
+            query = query.Where(s => allowedGroups.Contains(s.MinAgeGroup));
+        }
         if (subType.HasValue)
             query = query.Where(s => s.SubscriptionFilter == null || s.SubscriptionFilter == subType.Value);
 
@@ -198,6 +201,17 @@ public class SimulationService : ISimulationService
 
         _context.Simulations.Remove(simulation);
         await _context.SaveChangesAsync(ct);
+    }
+
+    private static List<AgeGroup> GetAllowedAgeGroups(AgeGroup userGroup)
+    {
+        return userGroup switch
+        {
+            AgeGroup.Child => [AgeGroup.Child],
+            AgeGroup.Adult => [AgeGroup.Child, AgeGroup.Adult],
+            AgeGroup.Senior => [AgeGroup.Child, AgeGroup.Adult, AgeGroup.Senior],
+            _ => [AgeGroup.Child]
+        };
     }
 
     private static double GetSegmentMultiplier(AgeGroup? ageGroup, SubscriptionType? subType)

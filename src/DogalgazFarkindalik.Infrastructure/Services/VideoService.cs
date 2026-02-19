@@ -18,7 +18,10 @@ public class VideoService : IVideoService
         var query = _context.Videos.Where(v => v.IsPublished).AsQueryable();
 
         if (ageGroup.HasValue)
-            query = query.Where(v => v.MinAgeGroup <= ageGroup.Value);
+        {
+            var allowedGroups = GetAllowedAgeGroups(ageGroup.Value);
+            query = query.Where(v => allowedGroups.Contains(v.MinAgeGroup));
+        }
 
         if (subType.HasValue)
             query = query.Where(v => v.SubscriptionFilter == null || v.SubscriptionFilter == subType.Value);
@@ -75,5 +78,16 @@ public class VideoService : IVideoService
             ?? throw new KeyNotFoundException("Video bulunamadi.");
         _context.Videos.Remove(video);
         await _context.SaveChangesAsync(ct);
+    }
+
+    private static List<AgeGroup> GetAllowedAgeGroups(AgeGroup userGroup)
+    {
+        return userGroup switch
+        {
+            AgeGroup.Child => [AgeGroup.Child],
+            AgeGroup.Adult => [AgeGroup.Child, AgeGroup.Adult],
+            AgeGroup.Senior => [AgeGroup.Child, AgeGroup.Adult, AgeGroup.Senior],
+            _ => [AgeGroup.Child]
+        };
     }
 }
