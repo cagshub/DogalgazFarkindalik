@@ -46,4 +46,22 @@ public class VideosController : Controller
         ViewBag.SubscriptionType = subscriptionType;
         return View();
     }
+
+    public async Task<IActionResult> Detail(Guid id)
+    {
+        var token = HttpContext.Session.GetString("Token");
+        if (string.IsNullOrEmpty(token))
+            return RedirectToAction("Login", "Auth");
+
+        var client = _httpClientFactory.CreateClient("DogalgazAPI");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await client.GetAsync($"/api/videos/{id}");
+        if (!response.IsSuccessStatusCode)
+            return RedirectToAction("Index");
+
+        var json = await response.Content.ReadAsStringAsync();
+        ViewBag.Video = JsonSerializer.Deserialize<JsonElement>(json);
+        return View();
+    }
 }
