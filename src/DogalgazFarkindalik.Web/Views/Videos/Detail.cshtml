@@ -7,6 +7,7 @@
     var title = video.GetProperty("title").GetString();
     var description = video.GetProperty("description").GetString();
     var url = video.GetProperty("url").GetString();
+    var videoId = video.GetProperty("id").GetString();
     var durationSec = video.GetProperty("durationSec").GetInt32();
     var tags = video.GetProperty("tags").GetString();
     var ageLabel = video.GetProperty("minAgeGroup").GetString() switch
@@ -16,6 +17,16 @@
         "Senior" => "65+",
         _ => video.GetProperty("minAgeGroup").GetString()
     };
+
+    int progressPercent = 0;
+    int watchedSeconds = 0;
+    bool isCompleted = false;
+    if (ViewBag.VideoProgress is System.Text.Json.JsonElement vp)
+    {
+        progressPercent = vp.GetProperty("progressPercent").GetInt32();
+        watchedSeconds = vp.GetProperty("watchedSeconds").GetInt32();
+        isCompleted = vp.GetProperty("isCompleted").GetBoolean();
+    }
 
     <div class="container py-5">
         <div class="mb-4">
@@ -31,7 +42,7 @@
                     @if (url != null && url.Contains("youtube.com/embed"))
                     {
                         <div class="ratio ratio-16x9">
-                            <iframe src="@url" title="@title"
+                            <iframe id="ytPlayer" src="@(url)?enablejsapi=1" title="@title"
                                     frameborder="0"
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                     allowfullscreen></iframe>
@@ -55,6 +66,50 @@
             </div>
 
             <div class="col-lg-4">
+                <!-- Ilerleme Durumu -->
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Ilerleme Durumu</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small" id="progressLabel">
+                                @if (isCompleted)
+                                {
+                                    <text><i class="bi bi-check-circle-fill text-success me-1"></i>Tamamlandi</text>
+                                }
+                                else if (progressPercent > 0)
+                                {
+                                    <text><i class="bi bi-clock-history text-warning me-1"></i>Devam ediyor</text>
+                                }
+                                else
+                                {
+                                    <text><i class="bi bi-circle text-muted me-1"></i>Henuz izlenmedi</text>
+                                }
+                            </span>
+                            <span class="fw-bold" id="progressPercentText">%@progressPercent</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar @(isCompleted ? "bg-success" : "bg-primary") progress-bar-striped @(progressPercent > 0 && !isCompleted ? "progress-bar-animated" : "")"
+                                 id="progressBar"
+                                 role="progressbar"
+                                 style="width: @(progressPercent)%"
+                                 aria-valuenow="@progressPercent"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100"></div>
+                        </div>
+                        <div class="text-muted small mt-2" id="progressTime">
+                            @{
+                                var wMin = watchedSeconds / 60;
+                                var wSec = watchedSeconds % 60;
+                                var tMin = durationSec / 60;
+                                var tSec = durationSec % 60;
+                            }
+                            <i class="bi bi-clock me-1"></i>@wMin dk @wSec sn / @tMin dk @tSec sn
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Video Bilgileri -->
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white">
@@ -96,6 +151,108 @@
             </div>
         </div>
     </div>
+
+    <!-- YouTube IFrame API ile ilerleme takibi -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script>
+        var player;
+        var videoId = '@videoId';
+        var totalSeconds = @durationSec;
+        var currentWatched = @watchedSeconds;
+        var lastSaved = currentWatched;
+        var saveInterval = null;
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('ytPlayer', {
+                events: {
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+
+        function onPlayerStateChange(event) {
+            if (event.data === YT.PlayerState.PLAYING) {
+                if (!saveInterval) {
+                    saveInterval = setInterval(trackProgress, 5000);
+                }
+            } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
+                trackProgress();
+                if (event.data === YT.PlayerState.ENDED) {
+                    saveProgress(totalSeconds);
+                }
+                if (saveInterval) {
+                    clearInterval(saveInterval);
+                    saveInterval = null;
+                }
+            }
+        }
+
+        function trackProgress() {
+            if (player && typeof player.getCurrentTime === 'function') {
+                var current = Math.floor(player.getCurrentTime());
+                if (current > currentWatched) {
+                    currentWatched = current;
+                    if (currentWatched - lastSaved >= 5) {
+                        saveProgress(currentWatched);
+                    }
+                }
+            }
+        }
+
+        function saveProgress(watched) {
+            lastSaved = watched;
+            var percent = Math.min(100, Math.round((watched / totalSeconds) * 100));
+            var completed = percent >= 95;
+
+            updateUI(watched, percent, completed);
+
+            fetch('/Videos/UpdateProgress/' + videoId, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ watchedSeconds: watched, totalSeconds: totalSeconds })
+            }).catch(function(err) {
+                console.log('Progress kayit hatasi:', err);
+            });
+        }
+
+        function updateUI(watched, percent, completed) {
+            var bar = document.getElementById('progressBar');
+            var percentText = document.getElementById('progressPercentText');
+            var label = document.getElementById('progressLabel');
+            var timeText = document.getElementById('progressTime');
+
+            if (bar) {
+                bar.style.width = percent + '%';
+                bar.setAttribute('aria-valuenow', percent);
+                if (completed) {
+                    bar.className = 'progress-bar bg-success';
+                } else {
+                    bar.className = 'progress-bar bg-primary progress-bar-striped progress-bar-animated';
+                }
+            }
+            if (percentText) percentText.textContent = '%' + percent;
+            if (label) {
+                if (completed) {
+                    label.innerHTML = '<i class="bi bi-check-circle-fill text-success me-1"></i>Tamamlandi';
+                } else {
+                    label.innerHTML = '<i class="bi bi-clock-history text-warning me-1"></i>Devam ediyor';
+                }
+            }
+            if (timeText) {
+                var wMin = Math.floor(watched / 60);
+                var wSec = watched % 60;
+                var tMin = Math.floor(totalSeconds / 60);
+                var tSec = totalSeconds % 60;
+                timeText.innerHTML = '<i class="bi bi-clock me-1"></i>' + wMin + ' dk ' + wSec + ' sn / ' + tMin + ' dk ' + tSec + ' sn';
+            }
+        }
+
+        window.addEventListener('beforeunload', function() {
+            if (currentWatched > lastSaved) {
+                saveProgress(currentWatched);
+            }
+        });
+    </script>
 }
 else
 {
