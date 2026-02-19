@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace DogalgazFarkindalik.API.Controllers;
 
 /// <summary>
-/// Icerik hedefleme kurallari yonetimi (Admin)
+/// Icerik hedefleme kurallari yonetimi — yas grubu ve abonelik tipine gore puan carpanlari (Sadece Admin)
 /// </summary>
 [ApiController]
 [Route("api/admin/content-targeting-rules")]
@@ -19,10 +19,17 @@ public class ContentTargetingRulesController : ControllerBase
         => _service = service;
 
     /// <summary>
-    /// Tum hedefleme kurallarini listeler
+    /// Tum icerik hedefleme kurallarini listeler
     /// </summary>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Hedefleme kurallari listesi (modul, yas grubu, abonelik tipi, puan carpani)</returns>
+    /// <response code="200">Kurallar basariyla getirildi</response>
+    /// <response code="401">Yetkisiz erisim - giris yapilmali</response>
+    /// <response code="403">Yetersiz yetki (Admin gerekli)</response>
     [HttpGet]
     [ProducesResponseType(typeof(List<ContentTargetingRuleDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<List<ContentTargetingRuleDto>>> GetAll(CancellationToken ct)
     {
         var rules = await _service.GetAllAsync(ct);
@@ -32,8 +39,15 @@ public class ContentTargetingRulesController : ControllerBase
     /// <summary>
     /// Belirtilen ID'ye sahip hedefleme kuralini getirir
     /// </summary>
+    /// <param name="id">Kural ID (GUID)</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Hedefleme kurali detayi</returns>
+    /// <response code="200">Kural bulundu</response>
+    /// <response code="401">Yetkisiz erisim</response>
+    /// <response code="404">Kural bulunamadi</response>
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(ContentTargetingRuleDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ContentTargetingRuleDto>> GetById(Guid id, CancellationToken ct)
     {
@@ -42,10 +56,18 @@ public class ContentTargetingRulesController : ControllerBase
     }
 
     /// <summary>
-    /// Yeni hedefleme kurali olusturur
+    /// Yeni icerik hedefleme kurali olusturur (ornegin: 65+ yas grubu icin x1.2 puan carpani)
     /// </summary>
+    /// <param name="dto">Kural bilgileri (modul tipi, yas grubu, abonelik tipi, puan carpani, aciklama)</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Olusturulan hedefleme kurali</returns>
+    /// <response code="201">Kural basariyla olusturuldu</response>
+    /// <response code="401">Yetkisiz erisim</response>
+    /// <response code="403">Yetersiz yetki (Admin gerekli)</response>
     [HttpPost]
     [ProducesResponseType(typeof(ContentTargetingRuleDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<ContentTargetingRuleDto>> Create(
         [FromBody] CreateContentTargetingRuleDto dto, CancellationToken ct)
     {
@@ -56,8 +78,16 @@ public class ContentTargetingRulesController : ControllerBase
     /// <summary>
     /// Mevcut hedefleme kuralini gunceller
     /// </summary>
+    /// <param name="id">Guncellenecek kural ID'si</param>
+    /// <param name="dto">Yeni kural bilgileri</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Guncellenmis hedefleme kurali</returns>
+    /// <response code="200">Kural basariyla guncellendi</response>
+    /// <response code="401">Yetkisiz erisim</response>
+    /// <response code="404">Kural bulunamadi</response>
     [HttpPut("{id:guid}")]
     [ProducesResponseType(typeof(ContentTargetingRuleDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ContentTargetingRuleDto>> Update(
         Guid id, [FromBody] CreateContentTargetingRuleDto dto, CancellationToken ct)
@@ -67,10 +97,16 @@ public class ContentTargetingRulesController : ControllerBase
     }
 
     /// <summary>
-    /// Hedefleme kuralini siler
+    /// Hedefleme kuralini kalici olarak siler
     /// </summary>
+    /// <param name="id">Silinecek kural ID'si</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <response code="204">Kural basariyla silindi</response>
+    /// <response code="401">Yetkisiz erisim</response>
+    /// <response code="404">Kural bulunamadi</response>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
