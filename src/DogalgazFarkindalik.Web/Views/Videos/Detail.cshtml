@@ -1,0 +1,97 @@
+@{
+    ViewData["Title"] = "Video Detay";
+}
+
+@if (ViewBag.Video is System.Text.Json.JsonElement video)
+{
+    var title = video.GetProperty("title").GetString();
+    var description = video.GetProperty("description").GetString();
+    var url = video.GetProperty("url").GetString();
+    var durationSec = video.GetProperty("durationSec").GetInt32();
+    var tags = video.GetProperty("tags").GetString();
+    var ageLabel = video.GetProperty("minAgeGroup").GetString() switch
+    {
+        "Child" => "Cocuk (4-12)",
+        "Adult" => "Yetiskin (13-65)",
+        "Senior" => "65+",
+        _ => video.GetProperty("minAgeGroup").GetString()
+    };
+
+    <div class="container py-5">
+        <div class="mb-4">
+            <a href="/Videos" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Videolara Don
+            </a>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- Video Player -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="ratio ratio-16x9 bg-dark rounded-top d-flex align-items-center justify-content-center" style="min-height: 400px;">
+                        <div class="text-center text-white">
+                            <i class="bi bi-play-circle" style="font-size: 5rem; cursor: pointer; opacity: 0.8;"
+                               onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'"
+                               onclick="this.parentElement.innerHTML='<div class=\'d-flex align-items-center justify-content-center h-100\'><div class=\'text-center\'><i class=\'bi bi-check-circle text-success\' style=\'font-size: 4rem;\'></i><h4 class=\'mt-3 text-white\'>Video Kaydedildi</h4><p class=\'text-white-50\'>Demo modunda video dosyalari sunucuda bulunmamaktadir.<br>Gercek ortamda burada video oynatilacaktir.</p></div></div>'"></i>
+                            <h5 class="mt-3">@title</h5>
+                            <p class="text-white-50 mb-0">Oynatmak icin tiklayiniz</p>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <h4 class="card-title">@title</h4>
+                        <p class="card-text text-muted">@description</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <!-- Video Bilgileri -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Video Bilgileri</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span class="text-muted">Sure</span>
+                                <span><i class="bi bi-clock me-1"></i>@(durationSec / 60) dk @(durationSec % 60) sn</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span class="text-muted">Yas Grubu</span>
+                                <span class="badge bg-primary">@ageLabel</span>
+                            </li>
+                            @if (video.TryGetProperty("subscriptionFilter", out var sf) && sf.ValueKind != System.Text.Json.JsonValueKind.Null)
+                            {
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span class="text-muted">Abonelik</span>
+                                    <span class="badge bg-secondary">@sf.GetString()</span>
+                                </li>
+                            }
+                        </ul>
+
+                        @if (!string.IsNullOrEmpty(tags))
+                        {
+                            <div class="mt-3">
+                                <span class="text-muted small">Etiketler:</span>
+                                <div class="mt-1">
+                                    @foreach (var tag in tags.Split(',', System.StringSplitOptions.TrimEntries))
+                                    {
+                                        <span class="badge bg-light text-dark border me-1 mb-1">#@tag</span>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="container py-5 text-center">
+        <i class="bi bi-exclamation-triangle text-warning" style="font-size: 3rem;"></i>
+        <p class="mt-3">Video bulunamadi.</p>
+        <a href="/Videos" class="btn btn-primary">Videolara Don</a>
+    </div>
+}
