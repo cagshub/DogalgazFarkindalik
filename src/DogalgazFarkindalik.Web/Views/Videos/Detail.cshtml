@@ -28,15 +28,25 @@
             <div class="col-lg-8">
                 <!-- Video Player -->
                 <div class="card border-0 shadow-sm mb-4">
-                    <div class="ratio ratio-16x9 bg-dark rounded-top d-flex align-items-center justify-content-center" style="min-height: 400px;">
-                        <div class="text-center text-white">
-                            <i class="bi bi-play-circle" style="font-size: 5rem; cursor: pointer; opacity: 0.8;"
-                               onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'"
-                               onclick="this.parentElement.innerHTML='<div class=\'d-flex align-items-center justify-content-center h-100\'><div class=\'text-center\'><i class=\'bi bi-check-circle text-success\' style=\'font-size: 4rem;\'></i><h4 class=\'mt-3 text-white\'>Video Kaydedildi</h4><p class=\'text-white-50\'>Demo modunda video dosyalari sunucuda bulunmamaktadir.<br>Gercek ortamda burada video oynatilacaktir.</p></div></div>'"></i>
-                            <h5 class="mt-3">@title</h5>
-                            <p class="text-white-50 mb-0">Oynatmak icin tiklayiniz</p>
+                    @if (url != null && url.Contains("youtube.com/embed"))
+                    {
+                        <div class="ratio ratio-16x9">
+                            <iframe src="@url" title="@title"
+                                    frameborder="0"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowfullscreen></iframe>
                         </div>
-                    </div>
+                    }
+                    else
+                    {
+                        <div class="ratio ratio-16x9 bg-dark rounded-top d-flex align-items-center justify-content-center">
+                            <div class="text-center text-white">
+                                <i class="bi bi-play-circle" style="font-size: 5rem;"></i>
+                                <h5 class="mt-3">@title</h5>
+                                <p class="text-white-50 mb-0">Video yuklenemedi</p>
+                            </div>
+                        </div>
+                    }
                     <div class="card-body">
                         <h4 class="card-title">@title</h4>
                         <p class="card-text text-muted">@description</p>
