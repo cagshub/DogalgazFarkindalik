@@ -13,12 +13,24 @@
             bilginizi test edin ve güvende kalın.
         </p>
         <div class="d-flex gap-3 justify-content-center">
-            <a href="/Auth/Register" class="btn btn-accent btn-lg px-4">
-                <i class="bi bi-person-plus me-2"></i>Hemen Başla
-            </a>
-            <a href="/Videos" class="btn btn-outline-light btn-lg px-4">
-                <i class="bi bi-play-circle me-2"></i>Videoları İzle
-            </a>
+            @if (!string.IsNullOrEmpty(Context.Session.GetString("Token")))
+            {
+                <a href="/Videos" class="btn btn-accent btn-lg px-4">
+                    <i class="bi bi-play-circle me-2"></i>Eğitime Devam Et
+                </a>
+                <a href="/Simulations" class="btn btn-outline-light btn-lg px-4">
+                    <i class="bi bi-controller me-2"></i>Simülasyonlar
+                </a>
+            }
+            else
+            {
+                <a href="/Auth/Register" class="btn btn-accent btn-lg px-4">
+                    <i class="bi bi-person-plus me-2"></i>Hemen Başla
+                </a>
+                <a href="/Videos" class="btn btn-outline-light btn-lg px-4">
+                    <i class="bi bi-play-circle me-2"></i>Videoları İzle
+                </a>
+            }
         </div>
     </div>
 </section>
